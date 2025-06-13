@@ -60,8 +60,6 @@
     const formulario = document.getElementById("formulario");
     const btnBorrar = document.getElementById("borrarQR");
 
-    const registroLocal = localStorage.getItem("qrGeneradoAlumno");
-
     if (registroLocal) {
       const datos = JSON.parse(registroLocal);
       mostrarQR(datos);
@@ -83,12 +81,6 @@
       mostrarQR(datosAlumno);
     });
 
-    btnBorrar.addEventListener("click", () => {
-      if (confirm("¿Estás seguro de borrar tu QR y volver a registrarte?")) {
-        localStorage.removeItem("qrGeneradoAlumno");
-        location.reload();
-      }
-    });
 
     function mostrarQR(datos) {
       qr.set({ value: JSON.stringify(datos) });
