@@ -1,0 +1,112 @@
+<!DOCTYPE html><html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal de Maestros - Control de Asistencia</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    header {
+      background-color: #343a40;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    .container {
+      margin-top: 2rem;
+    }
+    .card-salon:hover {
+      cursor: pointer;
+      background-color: #e9ecef;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Portal de Maestros</h1>
+    <p>Control de asistencia con QR</p>
+  </header>  <div class="container">
+    <div id="registro" class="mb-4">
+      <h3>Registro de Maestro</h3>
+      <form id="formRegistro">
+        <div class="mb-3">
+          <label for="nombre" class="form-label">Nombre completo</label>
+          <input type="text" class="form-control" id="nombre" required />
+        </div>
+        <div class="mb-3">
+          <label for="correo" class="form-label">Correo electrónico</label>
+          <input type="email" class="form-control" id="correo" required />
+        </div>
+        <button type="submit" class="btn btn-primary">Ingresar</button>
+      </form>
+    </div><div id="salones" class="d-none">
+  <h3>Salones asignados</h3>
+  <div class="row" id="listaSalones">
+    <!-- Aquí se mostrarán los salones -->
+  </div>
+</div>
+
+<div id="asistencia" class="d-none">
+  <h3>Escanear código QR</h3>
+  <video id="video" width="100%" height="320" autoplay></video>
+  <p id="mensajeQR">Escanea el código QR del alumno</p>
+  <ul id="listaAsistencias" class="list-group mt-3"></ul>
+</div>
+
+  </div>  <script>
+    const form = document.getElementById("formRegistro");
+    const salones = document.getElementById("salones");
+    const asistencia = document.getElementById("asistencia");
+    const listaSalones = document.getElementById("listaSalones");
+    const listaAsistencias = document.getElementById("listaAsistencias");
+    const video = document.getElementById("video");
+
+    const salonesData = ["1A", "2B", "3C"];
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      document.getElementById("registro").classList.add("d-none");
+      salones.classList.remove("d-none");
+      salonesData.forEach((salon) => {
+        const div = document.createElement("div");
+        div.className = "col-md-4 card card-body card-salon text-center m-2";
+        div.innerText = `Salón ${salon}`;
+        div.onclick = () => abrirEscaner(salon);
+        listaSalones.appendChild(div);
+      });
+    });
+
+    function abrirEscaner(salon) {
+      salones.classList.add("d-none");
+      asistencia.classList.remove("d-none");
+      document.getElementById("mensajeQR").innerText = `Escanea códigos para el salón ${salon}`;
+      iniciarCamara();
+    }
+
+    function iniciarCamara() {
+      if (navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+          .then((stream) => {
+            video.srcObject = stream;
+            // Aquí se integraría una librería real de escaneo como jsQR o qr-scanner
+            // Para demostración, fingimos escanear tras 3s
+            setTimeout(() => {
+              agregarAsistencia("Alumno123");
+            }, 3000);
+          })
+          .catch((err) => {
+            alert("Error al acceder a la cámara: " + err);
+          });
+      }
+    }
+
+    function agregarAsistencia(nombre) {
+      const item = document.createElement("li");
+      item.className = "list-group-item";
+      item.textContent = `✓ ${nombre} - Asistencia registrada`;
+      listaAsistencias.appendChild(item);
+    }
+  </script></body>
+</html>
