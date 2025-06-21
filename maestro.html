@@ -1,103 +1,142 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal del Alumno - QR Asistencia</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Portal del Maestro - QR de Asistencia</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/qrious"></script>
   <style>
-    body {
-      background-color: #f8f9fa;
-    }
-    header {
-      background-color: #198754;
-      color: white;
-      padding: 1rem;
-      text-align: center;
-    }
-    .container {
-      margin-top: 2rem;
-    }
-    #qrContainer {
-      display: none;
-      margin-top: 2rem;
-      text-align: center;
-    }
+    body { background-color: #f8f9fa; }
+    header { background-color: #0d6efd; color: white; padding: 1rem; text-align: center; }
+    .container { margin-top: 2rem; }
+    #qrContainer { text-align: center; margin-top: 2rem; }
   </style>
 </head>
 <body>
   <header>
-    <h1>Portal del Alumno</h1>
-    <p>Generador de código QR para asistencia</p>
+    <h1>Portal del Maestro</h1>
+    <p>Genera tu QR para la asistencia</p>
   </header>
 
   <div class="container">
-    <div id="formulario">
-      <h4>Regístrate</h4>
-      <form id="formAlumno">
-        <div class="mb-3">
-          <label for="nombre" class="form-label">Nombre completo</label>
-          <input type="text" class="form-control" id="nombre" required />
-        </div>
-        <div class="mb-3">
-          <label for="aula" class="form-label">Aula</label>
-          <input type="text" class="form-control" id="aula" required />
-        </div>
-        <button type="submit" class="btn btn-success">Generar QR</button>
-      </form>
+    <div id="loginForm">
+      <h4>Iniciar sesión</h4>
+      <div class="mb-3">
+        <label for="usuario" class="form-label">Nombre del maestro</label>
+        <input type="text" class="form-control" id="usuario" required>
+      </div>
+      <div class="mb-3">
+        <label for="clave" class="form-label">Contraseña</label>
+        <input type="password" class="form-control" id="clave" required>
+      </div>
+      <button class="btn btn-primary" id="btnLogin">Iniciar sesión</button>
+      <button class="btn btn-link" id="btnMostrarRegistro">Registrarse</button>
     </div>
 
-    <div id="qrContainer">
-      <h5>Tu código QR personal</h5>
+    <div id="registroForm" class="d-none">
+      <h4>Registro de maestro</h4>
+      <div class="mb-3">
+        <label class="form-label">Nombre</label>
+        <input type="text" class="form-control" id="regNombre" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Materia</label>
+        <input type="text" class="form-control" id="regMateria" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Aula</label>
+        <input type="text" class="form-control" id="regAula" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Contraseña</label>
+        <input type="password" class="form-control" id="regClave" required>
+      </div>
+      <button class="btn btn-success" id="btnRegistrar">Registrar</button>
+      <button class="btn btn-link" id="btnVolverLogin">Volver</button>
+    </div>
+
+    <div id="qrContainer" class="d-none">
+      <h4>Tu QR para la asistencia</h4>
       <canvas id="qr"></canvas>
-      <p id="infoAlumno" class="mt-3"></p>
-      <button id="borrarQR" class="btn btn-danger mt-3">Borrar y volver a registrar</button>
+      <p id="infoMaestro" class="mt-3"></p>
     </div>
   </div>
 
   <script>
-    const qr = new QRious({ element: document.getElementById("qr"), size: 250 });
+    const btnLogin = document.getElementById("btnLogin");
+    const btnMostrarRegistro = document.getElementById("btnMostrarRegistro");
+    const btnRegistrar = document.getElementById("btnRegistrar");
+    const btnVolverLogin = document.getElementById("btnVolverLogin");
+
+    const loginForm = document.getElementById("loginForm");
+    const registroForm = document.getElementById("registroForm");
     const qrContainer = document.getElementById("qrContainer");
-    const formAlumno = document.getElementById("formAlumno");
-    const formulario = document.getElementById("formulario");
-    const btnBorrar = document.getElementById("borrarQR");
 
-    const registroLocal = localStorage.getItem("qrGeneradoAlumno");
+    const qr = new QRious({ element: document.getElementById("qr"), size: 250 });
 
-    if (registroLocal) {
-      const datos = JSON.parse(registroLocal);
-      mostrarQR(datos);
-    }
+    btnMostrarRegistro.addEventListener("click", () => {
+      loginForm.classList.add("d-none");
+      registroForm.classList.remove("d-none");
+    });
 
-    formAlumno.addEventListener("submit", function (e) {
-      e.preventDefault();
+    btnVolverLogin.addEventListener("click", () => {
+      registroForm.classList.add("d-none");
+      loginForm.classList.remove("d-none");
+    });
 
-      const nombre = document.getElementById("nombre").value.trim();
-      const aula = document.getElementById("aula").value.trim();
+    btnRegistrar.addEventListener("click", () => {
+      const nombre = document.getElementById("regNombre").value.trim();
+      const materia = document.getElementById("regMateria").value.trim();
+      const aula = document.getElementById("regAula").value.trim();
+      const clave = document.getElementById("regClave").value.trim();
 
-      if (!nombre || !aula) {
+      if (!nombre || !materia || !aula || !clave) {
         alert("Completa todos los campos.");
         return;
       }
 
-      const datosAlumno = { nombre, aula };
-      localStorage.setItem("qrGeneradoAlumno", JSON.stringify(datosAlumno));
-      mostrarQR(datosAlumno);
+      const registro = { nombre, materia, aula, clave };
+      localStorage.setItem(`maestro_${nombre.toLowerCase()}`, JSON.stringify(registro));
+
+      alert("Registro exitoso. Ahora puedes iniciar sesión.");
+      registroForm.classList.add("d-none");
+      loginForm.classList.remove("d-none");
     });
 
-    btnBorrar.addEventListener("click", () => {
-      if (confirm("¿Estás seguro de borrar tu QR y volver a registrarte?")) {
-        localStorage.removeItem("qrGeneradoAlumno");
-        location.reload();
+    btnLogin.addEventListener("click", () => {
+      const usuario = document.getElementById("usuario").value.trim().toLowerCase();
+      const clave = document.getElementById("clave").value.trim();
+
+      const datos = localStorage.getItem(`maestro_${usuario}`);
+      if (!datos) {
+        alert("Maestro no registrado.");
+        return;
       }
+
+      const maestro = JSON.parse(datos);
+      if (maestro.clave !== clave) {
+        alert("Contraseña incorrecta.");
+        return;
+      }
+
+      mostrarQR(maestro);
     });
 
-    function mostrarQR(datos) {
-      qr.set({ value: JSON.stringify(datos) });
-      formulario.style.display = "none";
-      qrContainer.style.display = "block";
-      document.getElementById("infoAlumno").textContent = `Nombre: ${datos.nombre} | Aula: ${datos.aula}`;
+    function mostrarQR(maestro) {
+      const data = {
+        maestro: maestro.nombre,
+        materia: maestro.materia,
+        aula: maestro.aula
+      };
+      qr.set({ value: JSON.stringify(data) });
+
+      document.getElementById("infoMaestro").textContent =
+        `Maestro: ${data.maestro} | Materia: ${data.materia} | Aula: ${data.aula}`;
+
+      loginForm.classList.add("d-none");
+      registroForm.classList.add("d-none");
+      qrContainer.classList.remove("d-none");
     }
   </script>
 </body>
