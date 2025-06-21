@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Escáner QR</title>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <title>Registro Asistencia</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <style>
     body {
       background: #111;
@@ -13,11 +13,11 @@
       flex-direction: column;
       align-items: center;
       padding: 20px;
-      font-family: sans-serif;
     }
-    #reader {
+    video {
       width: 300px;
-      margin-top: 20px;
+      border: 2px solid #00ff00;
+      border-radius: 8px;
     }
     #resultado {
       margin-top: 10px;
@@ -30,50 +30,85 @@
     button {
       margin-top: 10px;
       padding: 10px 20px;
-      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <h1>Escáner de Código QR</h1>
-  <div id="reader"></div>
-  <div id="resultado">Esperando escaneo...</div>
-  <button onclick="detenerScanner()">Detener escáner</button>
+  <h1>Registro Asistencia QR</h1>
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas" hidden></canvas>
+  <div id="resultado">Esperando QR...</div>
+  <button onclick="detenerCamara()">Detener cámara</button>
 
   <script>
-    const html5QrCode = new Html5Qrcode("reader");
-    const resultadoDiv = document.getElementById("resultado");
+    let video = document.getElementById("video");
+    let canvas = document.getElementById("canvas");
+    let resultadoDiv = document.getElementById("resultado");
+    let asistenciaRegistrada = [];
+    let streamGlobal = null;
+    let escaneando = true;
 
-    function iniciarScanner() {
-      html5QrCode.start(
-        { facingMode: { exact: "environment" } }, // Forzar cámara trasera
-        {
-          fps: 10,
-          qrbox: 250
-        },
-        qrCodeMessage => {
-          resultadoDiv.innerText = `QR detectado: ${qrCodeMessage}`;
-          // Puedes detener el escaneo automáticamente si quieres:
-          // detenerScanner();
-        },
-        errorMessage => {
-          // console.log(`No se detectó QR: ${errorMessage}`);
+    async function iniciarCamara() {
+      try {
+        streamGlobal = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } });
+        video.srcObject = streamGlobal;
+        video.setAttribute("playsinline", true); 
+        video.play();
+        requestAnimationFrame(tick);
+      } catch (err) {
+        resultadoDiv.innerText = "Error al acceder a la cámara: " + err;
+      }
+    }
+
+    function detenerCamara() {
+      if (streamGlobal) {
+        streamGlobal.getTracks().forEach(track => track.stop());
+        streamGlobal = null;
+        escaneando = false;
+        resultadoDiv.innerText += "\nCámara detenida.";
+      }
+    }
+
+    function tick() {
+      if (!escaneando) return;
+
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        let ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        let code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: "dontInvert",
+        });
+
+        if (code) {
+          try {
+            let info = JSON.parse(code.data);
+            resultadoDiv.innerHTML = `
+              ✅ Asistencia registrada <br>
+              Nombre: ${info.nombre} <br>
+              Aula: ${info.aula} <br>
+              Grupo: ${info.grupo}
+            `;
+            asistenciaRegistrada.push({
+              ...info,
+              hora: new Date().toLocaleTimeString()
+            });
+            console.log("Asistencias:", asistenciaRegistrada);
+            escaneando = false; 
+            detenerCamara();
+            return;
+          } catch (e) {
+            resultadoDiv.innerText = "QR no contiene datos válidos.";
+          }
         }
-      ).catch(err => {
-        resultadoDiv.innerText = `Error al iniciar escáner: ${err}`;
-      });
+      }
+      requestAnimationFrame(tick);
     }
 
-    function detenerScanner() {
-      html5QrCode.stop().then(() => {
-        resultadoDiv.innerText = "Escáner detenido.";
-      }).catch(err => {
-        resultadoDiv.innerText = `Error al detener escáner: ${err}`;
-      });
-    }
-
-    // Iniciar automáticamente
-    iniciarScanner();
+    iniciarCamara();
   </script>
 </body>
 </html>
