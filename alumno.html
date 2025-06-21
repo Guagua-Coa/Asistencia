@@ -3,60 +3,77 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Abrir y detener cámara</title>
+  <title>Escáner QR</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body {
+      background: #111;
+      color: #fff;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      height: 100vh;
-      background: #111;
-      color: #fff;
+      padding: 20px;
+      font-family: sans-serif;
     }
-    video {
-      width: 80%;
-      max-width: 400px;
-      border: 3px solid #00ff00;
-      border-radius: 10px;
+    #reader {
+      width: 300px;
+      margin-top: 20px;
+    }
+    #resultado {
+      margin-top: 10px;
+      padding: 10px;
+      background: #222;
+      border: 1px solid #00ff00;
+      border-radius: 8px;
+      word-break: break-word;
     }
     button {
-      margin: 10px;
+      margin-top: 10px;
       padding: 10px 20px;
-      font-size: 1.2rem;
       cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <h1>Cámara Web</h1>
-  <button onclick="abrirCamara()">Iniciar cámara</button>
-  <button onclick="detenerCamara()">Detener cámara</button>
-  <video id="video" autoplay playsinline></video>
+  <h1>Escáner de Código QR</h1>
+  <div id="reader"></div>
+  <div id="resultado">Esperando escaneo...</div>
+  <button onclick="detenerScanner()">Detener escáner</button>
 
   <script>
-    let streamGlobal = null;
+    const html5QrCode = new Html5Qrcode("reader");
+    const resultadoDiv = document.getElementById("resultado");
 
-    async function abrirCamara() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const video = document.getElementById('video');
-        video.srcObject = stream;
-        streamGlobal = stream;
-      } catch (err) {
-        alert("Error al acceder a la cámara: " + err);
-        console.error(err);
-      }
+    function iniciarScanner() {
+      html5QrCode.start(
+        { facingMode: { exact: "environment" } }, // Forzar cámara trasera
+        {
+          fps: 10,
+          qrbox: 250
+        },
+        qrCodeMessage => {
+          resultadoDiv.innerText = `QR detectado: ${qrCodeMessage}`;
+          // Puedes detener el escaneo automáticamente si quieres:
+          // detenerScanner();
+        },
+        errorMessage => {
+          // console.log(`No se detectó QR: ${errorMessage}`);
+        }
+      ).catch(err => {
+        resultadoDiv.innerText = `Error al iniciar escáner: ${err}`;
+      });
     }
 
-    function detenerCamara() {
-      if (streamGlobal) {
-        streamGlobal.getTracks().forEach(track => track.stop());
-        const video = document.getElementById('video');
-        video.srcObject = null;
-        streamGlobal = null;
-      }
+    function detenerScanner() {
+      html5QrCode.stop().then(() => {
+        resultadoDiv.innerText = "Escáner detenido.";
+      }).catch(err => {
+        resultadoDiv.innerText = `Error al detener escáner: ${err}`;
+      });
     }
+
+    // Iniciar automáticamente
+    iniciarScanner();
   </script>
 </body>
 </html>
